@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: BlocProvider(
-        create: (context) => WeatherBloc(weatherUseCase: WeatherUseCase(repository: WeatherRepository(apiKey: '21780650cc27d641b00b7aaad548b1d6'))),
+        create: (context) => WeatherBlocBloc(apiKey: '21780650cc27d641b00b7aaad548b1d6'),
         child: WeatherPage(),
       ),
 

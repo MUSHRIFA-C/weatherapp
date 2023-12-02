@@ -1,67 +1,67 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:weather/weather.dart';
 import 'package:weatherapp/Domain/weather.dart';
 import 'package:weatherapp/Domain/weather_usecase.dart';
 
 // Events
-abstract class WeatherEvent extends Equatable {
+sealed class WeatherBlocEvent extends Equatable{
+  const WeatherBlocEvent();
+
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 
-class FetchWeather extends WeatherEvent {}
+class FetchWeather extends WeatherBlocEvent{
+
+}
 
 // States
-abstract class WeatherState extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class WeatherInitial extends WeatherState {}
-
-class WeatherLoading extends WeatherState {}
-
-class WeatherLoaded extends WeatherState {
-  final Weather weather;
-
-  WeatherLoaded({required this.weather});
+sealed class WeatherBlocState extends Equatable {
+  const WeatherBlocState();
 
   @override
-  List<Object?> get props => [weather];
+  List<Object> get props => [];
 }
 
-class WeatherError extends WeatherState {
-  final String error;
+final class WeatherBlocInitial extends WeatherBlocState {}
 
-  WeatherError({required this.error});
+final class WeatherBlocLoading extends WeatherBlocState {}
+final class WeatherBlocFailure extends WeatherBlocState {}
+
+final class WeatherBlocSuccess extends WeatherBlocState {
+  final List<Weather> weatherForecast;
+
+  WeatherBlocSuccess(this.weatherForecast);
 
   @override
-  List<Object?> get props => [error];
+  List<Object> get props => [weatherForecast];
+
 }
-
-
 // BLoC
-class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
-  final WeatherUseCase weatherUseCase;
-
-  WeatherBloc({required this.weatherUseCase}) : super(WeatherInitial());
-
-  @override
-  Stream<WeatherState> mapEventToState(WeatherEvent event) async* {
-    if (event is FetchWeather) {
-      const double latitude = 37.7749;
-      const double longitude = -122.4194;
-      const String apiKey = '21780650cc27d641b00b7aaad548b1d6';
-
-      // Perform the logic to fetch weather data here
+class WeatherBlocBloc extends Bloc<WeatherBlocEvent, WeatherBlocState> {
+  final String apiKey;
+  WeatherBlocBloc({required this.apiKey}) : super(WeatherBlocInitial()) {
+    on<FetchWeather>((event, emit) async {
+      emit(WeatherBlocLoading());
       try {
-        final weather = await weatherUseCase.getWeather(
-            latitude, longitude, apiKey);
-        yield WeatherLoaded(weather: weather);
+        WeatherFactory wf = WeatherFactory(apiKey, language: Language.ENGLISH);
+
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+          forceAndroidLocationManager: true,
+        );
+
+        List<Weather> weatherForecast = await wf.fiveDayForecastByLocation(
+          position.latitude,
+          position.longitude,
+        );
+        //print('---------weather forecast: $weatherForecast');
+        emit(WeatherBlocSuccess(weatherForecast));
       } catch (e) {
-        yield WeatherError(error: e.toString());
+        emit(WeatherBlocFailure());
       }
-    }
+    });
   }
 }

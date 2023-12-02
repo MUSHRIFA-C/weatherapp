@@ -7,8 +7,8 @@ class WeatherUseCase {
 
   WeatherUseCase({required this.repository});
 
-  Future<Weather> getWeather(double lat, double lon, String apiKey) async {
+  Future<Weathers> getWeather(double lat, double lon, String apiKey) async {
     final weatherData = await repository.getWeather(lat, lon, apiKey);
-    return Weather.fromJson(weatherData);
+    return Weathers.fromJson(weatherData);
   }
 }
